@@ -220,7 +220,8 @@ lsf_logger_print (Logger *logger, char *log_level, const char *file_name, const 
   }
 
   local_time = g_date_time_new_now_local ();
-  log_asctime = g_date_time_format (local_time, "%F %H:%M:%S");
+  log_asctime = g_date_time_format (local_time, "%F %H:%M:%S ");
+  log_asctime = g_strconcat (log_asctime, "(", lsf_logger_itoa (g_date_time_get_microsecond (local_time)), ")", NULL);
 
   dir = g_dir_open (logger->logger_config[LOGGER_PATH], 0, &error);
   if (error != NULL)

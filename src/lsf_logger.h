@@ -14,6 +14,7 @@
 #define LOGGER_FMT_STRING_BUF 4096
 #define LOGGER_FMT_WORD_BUF   10
 #define CONFIG_FILE_PATH      "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
+#define LOGGER_DEFAULT        "lsf"
 
 enum {
   LOGGER_NAME,
