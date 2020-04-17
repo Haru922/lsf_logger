@@ -50,9 +50,10 @@ int logger_cnt;
 #define GLOGD(logger, format, ...) lsf_logger_print(logger, "DEBUG", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 
 extern Logger  *lsf_get_logger                      (char *logger_name, Confer *confer);
-extern Logger  *lsf_logger_exist                    (char *logger_name);
+extern int      lsf_logger_exist                    (char *logger_name);
 extern gboolean lsf_logger_init                     (Logger *logger, Confer *confer);
 extern void     lsf_logger_free                     (Logger *logger);
+extern void     lsf_logger_free_all                 (void);
 extern int      lsf_logger_print                    (Logger *logger, char *log_level, const char *file_name, const int line_num, const char *func_name, char *format, ...);
 extern int      lsf_logger_get_log_level_index      (char *log_level);
 extern gchar   *lsf_logger_get_log_format_string    (Logger *logger);
