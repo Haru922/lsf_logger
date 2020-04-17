@@ -2,6 +2,7 @@
 #define __LSF_LOGGER_H__
 
 #include <fcntl.h>
+#include <utime.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -9,11 +10,10 @@
 #include <glib/gprintf.h>
 #include <glib/gstdio.h>
 
-#include "lsf_confer.h"
-
 #define LOGGER_MAX            10
 #define LOGGER_FMT_STRING_BUF 4096
 #define LOGGER_FMT_WORD_BUF   10
+#define CONFIG_FILE_PATH      "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
 
 enum {
   LOGGER_NAME,
@@ -49,9 +49,9 @@ int logger_cnt;
 #define GLOGI(logger, format, ...) lsf_logger_print(logger, "INFO", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 #define GLOGD(logger, format, ...) lsf_logger_print(logger, "DEBUG", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 
-extern Logger  *lsf_get_logger                      (char *logger_name, Confer *confer);
+extern Logger  *lsf_get_logger                      (char *logger_name);
 extern int      lsf_logger_exist                    (char *logger_name);
-extern gboolean lsf_logger_init                     (Logger *logger, Confer *confer);
+extern gboolean lsf_logger_init                     (Logger *logger);
 extern void     lsf_logger_free                     (Logger *logger);
 extern void     lsf_logger_free_all                 (void);
 extern int      lsf_logger_print                    (Logger *logger, char *log_level, const char *file_name, const int line_num, const char *func_name, char *format, ...);
@@ -60,5 +60,6 @@ extern gchar   *lsf_logger_get_log_format_string    (Logger *logger);
 extern int      lsf_logger_get_log_file_cnt         (Logger *logger, GDir *dir);
 extern gchar   *lsf_logger_get_log_file_first       (Logger *logger, GDir *dir);
 extern gchar   *lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local_time);
+extern gchar   *lsf_logger_itoa                     (int num);
 
 #endif

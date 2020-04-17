@@ -1,13 +1,10 @@
 #include "lsf_logger.h"
 
 Logger *
-lsf_get_logger (char *logger_name, Confer *confer)
-{
-  int i;
-
-  if ((i = lsf_logger_exist (logger_name)) != -1)
-  {
-    return logger[i];
+lsf_get_logger (char *logger_name)
+{ 
+  int i; if ((i = lsf_logger_exist (logger_name)) != -1)
+  { return logger[i];
   }
   for (i = 0; i < LOGGER_MAX; i++)
   {
@@ -24,7 +21,7 @@ lsf_get_logger (char *logger_name, Confer *confer)
   logger_cnt++;
 
   logger[i]->logger_config[LOGGER_NAME] = g_strdup (logger_name);
-  lsf_logger_init (logger[i], confer);
+  lsf_logger_init (logger[i]);
 
   return logger[i];
 }
@@ -45,14 +42,20 @@ lsf_logger_exist (char *logger_name)
 }
 
 gboolean
-lsf_logger_init (Logger *logger, Confer *confer)
+lsf_logger_init (Logger *logger)
 {
-  logger->logger_config[LOGGER_PATH] = lsf_confer_get_str (confer, "LOG", "PATH");
-  logger->logger_config[LOGGER_FMT] = lsf_confer_get_str (confer, "LOG", "FORMAT");
-  logger->logger_config[LOGGER_LEVEL] = lsf_confer_get_str (confer, "LOG", "LEVEL");
-  logger->logger_config[LOGGER_MAX_BYTES] = lsf_confer_get_str (confer, "LOG", "MAX_BYTES");
-  logger->logger_config[LOGGER_BACKUP_COUNT] = lsf_confer_get_str (confer, "LOG", "BACKUP_COUNT");
-  logger->logger_config[LOGGER_FILE_EXTENSION] = lsf_confer_get_str (confer, "LOG", "FILE_EXTENSION");
+  GKeyFile *key_file = g_key_file_new ();
+  
+  g_key_file_load_from_file (key_file, CONFIG_FILE_PATH, G_KEY_FILE_NONE, NULL);
+
+  logger->logger_config[LOGGER_PATH] = g_key_file_get_string (key_file, "LOG", "PATH", NULL);
+  logger->logger_config[LOGGER_FMT] = g_key_file_get_string (key_file, "LOG", "FORMAT", NULL);
+  logger->logger_config[LOGGER_LEVEL] = g_key_file_get_string (key_file, "LOG", "LEVEL", NULL);
+  logger->logger_config[LOGGER_MAX_BYTES] = g_key_file_get_string (key_file, "LOG", "MAX_BYTES", NULL);
+  logger->logger_config[LOGGER_BACKUP_COUNT] = g_key_file_get_string (key_file, "LOG", "BACKUP_COUNT", NULL);
+  logger->logger_config[LOGGER_FILE_EXTENSION] = g_key_file_get_string (key_file, "LOG", "FILE_EXTENSION", NULL);
+
+  g_key_file_free (key_file);
 }
 
 int
@@ -212,10 +215,12 @@ lsf_logger_print (Logger *logger, char *log_level, const char *file_name, const 
   int log_file_cnt = 0;
 
   if (lsf_logger_get_log_level_index (log_level) < lsf_logger_get_log_level_index (logger->logger_config[LOGGER_LEVEL]))
+  {
     return -1;
+  }
 
   local_time = g_date_time_new_now_local ();
-  log_asctime = g_date_time_format (local_time, "%a %b %d %H:%M:%S %Y");
+  log_asctime = g_date_time_format (local_time, "%F %H:%M:%S");
 
   dir = g_dir_open (logger->logger_config[LOGGER_PATH], 0, &error);
   if (error != NULL)
@@ -275,6 +280,7 @@ lsf_logger_print (Logger *logger, char *log_level, const char *file_name, const 
   {
     ret_val = -1;
   }
+  utime (output_path, NULL);
 
   g_free (log_asctime);
   log_asctime = NULL;
@@ -282,19 +288,20 @@ lsf_logger_print (Logger *logger, char *log_level, const char *file_name, const 
   output_path = NULL;
   g_free (log_format_string);
   log_format_string = NULL;
+  fclose (output_fp);
 
   log_file_cnt = lsf_logger_get_log_file_cnt (logger, dir);
 
   while (log_file_cnt > atoi (logger->logger_config[LOGGER_BACKUP_COUNT]))
   {
     first_log_file = lsf_logger_get_log_file_first (logger, dir);
+    g_print ("First log file: %s\n", first_log_file);
     g_remove (first_log_file);
     log_file_cnt--;
     g_free (first_log_file);
     first_log_file = NULL;
   }
 
-  fclose (output_fp);
   g_date_time_unref (local_time);
   g_dir_close (dir);
 
@@ -331,8 +338,8 @@ lsf_logger_get_log_file_first (Logger *logger, GDir *dir)
 
   while ((dir_file = g_dir_read_name (dir)) != NULL)
   {
-    if (g_str_has_prefix (dir_file, logger->logger_config[LOGGER_NAME]) &&
-        g_str_has_suffix (dir_file, logger->logger_config[LOGGER_FILE_EXTENSION]))
+    if (g_str_has_prefix (dir_file, logger->logger_config[LOGGER_NAME]))
+        //&& g_str_has_suffix (dir_file, logger->logger_config[LOGGER_FILE_EXTENSION]))
     {
       stat (dir_file, &file_info);
       if (mtime == -1)
@@ -342,7 +349,7 @@ lsf_logger_get_log_file_first (Logger *logger, GDir *dir)
       }
       else
       {
-        if (mtime >= file_info.st_mtime)
+        if (mtime > file_info.st_mtime)
         {
           mtime = file_info.st_mtime;
           g_free (first_log_file);
@@ -352,8 +359,32 @@ lsf_logger_get_log_file_first (Logger *logger, GDir *dir)
     }
   }
   g_dir_rewind (dir);
+  g_print ("%s\n", first_log_file);
 
   return first_log_file = g_strconcat (logger->logger_config[LOGGER_PATH], first_log_file, NULL);
+}
+
+gchar *
+lsf_logger_itoa (int num)
+{
+  char buf[2][10];
+  int i = 0;
+  int j = 0;
+
+  while (num)
+  {
+    buf[0][i++] = (num % 10) + '0';
+    num /= 10;
+  }
+  i--;
+
+  while (i >= 0)
+  {
+    buf[1][j++] = buf[0][i--];
+  }
+  buf[1][j] = '\0';
+
+  return g_strdup (buf[1]);
 }
 
 gchar *
@@ -363,8 +394,11 @@ lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local
   gchar *output_file_identifier;
   gchar *output_file_name;
   gchar *output_path;
+  gchar *renamed;
+  gchar *ext_num_str;
   struct stat file_info;
   const char *dir_file;
+  int i;
 
   output_file_identifier = g_date_time_format (local_time, "%F");
   output_file_name = g_strconcat (logger->logger_config[LOGGER_NAME], "-", output_file_identifier, ".", logger->logger_config[LOGGER_FILE_EXTENSION], NULL);
@@ -377,12 +411,17 @@ lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local
       stat (output_path, &file_info);
       if (atoi (logger->logger_config[LOGGER_MAX_BYTES]) <= file_info.st_size)
       {
-        output_file_identifier = g_strconcat (output_file_identifier, "+", NULL);
-        g_free (output_file_name);
-        g_free (output_path);
-        output_file_name = g_strconcat (logger->logger_config[LOGGER_NAME], "-", output_file_identifier, ".", logger->logger_config[LOGGER_FILE_EXTENSION], NULL);
-        output_path = g_strconcat (logger->logger_config[LOGGER_PATH], output_file_name, NULL);
-        g_dir_rewind (dir);
+        for (i = 1; i < atoi (logger->logger_config[LOGGER_BACKUP_COUNT]); i++)
+        {
+          ext_num_str = lsf_logger_itoa (i);
+          renamed = g_strconcat (output_path, ".", ext_num_str, NULL);
+          if (!g_file_test (renamed, G_FILE_TEST_EXISTS)) 
+          {
+            g_rename (output_path, renamed);
+          }
+          g_free (ext_num_str);
+          g_free (renamed);
+        }
       }
     }
   }
