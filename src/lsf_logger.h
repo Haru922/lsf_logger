@@ -1,6 +1,7 @@
 #ifndef __LSF_LOGGER_H__
 #define __LSF_LOGGER_H__
 
+#include <unistd.h>
 #include <fcntl.h>
 #include <utime.h>
 #include <sys/stat.h>
@@ -13,8 +14,8 @@
 #define LOGGER_MAX            10
 #define LOGGER_FMT_STRING_BUF 4096
 #define LOGGER_FMT_WORD_BUF   10
-#define CONFIG_FILE_PATH      "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
-#define LOGGER_DEFAULT        "lsf"
+#define LOGGER_CONFIG         "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
+#define LOGGER_DEFAULT_NAME   "lsf"
 
 enum {
   LOGGER_NAME,
@@ -28,7 +29,6 @@ enum {
 };
 
 enum {
-  LOGGER_LEVEL_ALL,
   LOGGER_LEVEL_DEBUG,
   LOGGER_LEVEL_INFO,
   LOGGER_LEVEL_WARNING,
@@ -37,12 +37,19 @@ enum {
   LOGGER_LEVEL_NUMS
 };
 
+enum {
+  LOGGER_PRINT_SUCCESS,
+  LOGGER_PRINT_FAILURE_CANNOT_OPEN_DIR,
+  LOGGER_PRINT_FAILURE_CANNOT_OPEN_FILE,
+  LOGGER_PRINT_FAILURE_RESULT_NUMS
+};
+
 typedef struct {
   gchar *logger_config[LOGGER_CONFIG_NUMS];
 } Logger;
 
 Logger *logger[LOGGER_MAX];
-int logger_cnt;
+int     logger_cnt;
 
 #define GLOGC(logger, format, ...) lsf_logger_print(logger, "CRITICAL", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 #define GLOGE(logger, format, ...) lsf_logger_print(logger, "ERROR", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
@@ -61,6 +68,6 @@ extern gchar   *lsf_logger_get_log_format_string    (Logger *logger);
 extern int      lsf_logger_get_log_file_cnt         (Logger *logger, GDir *dir);
 extern gchar   *lsf_logger_get_log_file_first       (Logger *logger, GDir *dir);
 extern gchar   *lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local_time);
-extern gchar   *lsf_logger_itoa                     (int num);
+extern gchar   *lsf_logger_util_itoa                (int num);
 
 #endif
