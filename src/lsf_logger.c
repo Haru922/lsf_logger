@@ -7,7 +7,7 @@ lsf_get_logger (char *logger_name)
 
   if (logger_name == NULL)
   {
-    logger_name = LOGGER_DEFAULT_NAME;
+    logger_name = LSF_LOGGER_DEFAULT_NAME;
   }
   else if ((i = lsf_logger_exist (logger_name)) != -1)
   { 
@@ -56,10 +56,12 @@ lsf_logger_exist (char *logger_name)
 gboolean
 lsf_logger_init (Logger *logger)
 {
-  int i;
-  GKeyFile *key_file = g_key_file_new ();
+  GKeyFile *key_file = NULL;
+  int       i;
   
-  g_key_file_load_from_file (key_file, LOGGER_CONFIG, G_KEY_FILE_NONE, NULL);
+  key_file = g_key_file_new ();
+
+  g_key_file_load_from_file (key_file, LSF_LOGGER_CONFIG, G_KEY_FILE_NONE, NULL);
 
   logger->logger_config[LOGGER_PATH] = g_key_file_get_string (key_file, "LOG", "PATH", NULL);
   logger->logger_config[LOGGER_FMT] = g_key_file_get_string (key_file, "LOG", "FORMAT", NULL);
@@ -127,7 +129,7 @@ lsf_logger_free (Logger *logger)
 }
 
 void
-lsf_logger_free_all ()
+lsf_logger_free_all (void)
 {
   int i;
 
@@ -146,9 +148,10 @@ lsf_logger_get_log_format_string (Logger *logger)
   char arg[LOGGER_FMT_STRING_BUF] = { 0, };
   char word[LOGGER_FMT_WORD_BUF] = { 0, };
   char ch;
-  int a, i, j;
+  int  a = 0;
+  int  i = 0;
+  int  j = 0;
 
-  a = i = 0;
   while (ch = logger->logger_config[LOGGER_FMT][i++])
   {
     if (ch == '%')
@@ -217,24 +220,31 @@ lsf_logger_get_log_format_string (Logger *logger)
 }
 
 int
-lsf_logger_print (Logger *logger, char *log_level, const char *file_name, const int line_num, const char *func_name, char *format, ...)
+lsf_logger_print (Logger     *logger,
+                  char       *log_level,
+                  const char *file_name,
+                  const int   line_num,
+                  const char *func_name,
+                  char       *format,
+                  ...)
 {
-  GError *error = NULL;
-  FILE *output_fp;
-  gchar *output_path;
   GDateTime *local_time;
-  gchar *log_asctime;
-  gchar *first_log_file;
-  gchar *log_format_string;
-  gchar *output_string;
-  GDir *dir;
-  int ret_val = LOGGER_PRINT_SUCCESS;
-  int i;
-  char ch;
   va_list args;
-  int level_index;
-  int log_file_cnt = 0;
-  int backup_cnt = atoi (logger->logger_config[LOGGER_BACKUP_COUNT]);
+  GError *error = NULL;
+  gchar  *output_path = NULL;
+  gchar  *log_asctime = NULL;
+  gchar  *first_log_file = NULL;
+  gchar  *log_format_string = NULL;
+  gchar  *output_string = NULL;
+  GDir   *dir = NULL;
+  FILE   *output_fp = NULL;
+  char    ch;
+  int     log_file_cnt = 0;
+  int     backup_cnt;
+  int     ret_val = LOGGER_PRINT_SUCCESS;
+  int     i;
+
+  backup_cnt = atoi (logger->logger_config[LOGGER_BACKUP_COUNT]);
 
   if (lsf_logger_get_log_level_index (log_level) < lsf_logger_get_log_level_index (logger->logger_config[LOGGER_LEVEL]))
   {
@@ -331,10 +341,11 @@ lsf_logger_print (Logger *logger, char *log_level, const char *file_name, const 
 }
 
 int
-lsf_logger_get_log_file_cnt (Logger *logger, GDir *dir)
+lsf_logger_get_log_file_cnt (Logger *logger,
+                             GDir   *dir)
 {
   const char *dir_file;
-  int log_file_cnt = 0;
+  int         log_file_cnt = 0;
 
   while ((dir_file = g_dir_read_name (dir)) != NULL)
   {
@@ -349,14 +360,15 @@ lsf_logger_get_log_file_cnt (Logger *logger, GDir *dir)
 }
 
 gchar *
-lsf_logger_get_log_file_first (Logger *logger, GDir *dir)
+lsf_logger_get_log_file_first (Logger *logger,
+                               GDir   *dir)
 {
-  const char *dir_file;
-  int log_file_cnt = 0;
-  time_t mtime = -1;
-  gchar *log_file;
-  gchar *first_log_file;
   struct stat file_info;
+  const char *dir_file;
+  time_t      mtime = -1;
+  gchar      *first_log_file = NULL;
+  gchar      *log_file = NULL;
+  int         log_file_cnt = 0;
 
   while ((dir_file = g_dir_read_name (dir)) != NULL)
   {
@@ -389,9 +401,10 @@ lsf_logger_get_log_file_first (Logger *logger, GDir *dir)
 gchar *
 lsf_logger_util_itoa (int num)
 {
-  char buf[2][10];
-  int i = 0;
-  int j = 0;
+  char buf[2][10] = { { 0, },
+                      { 0, } };
+  int  i = 0;
+  int  j = 0;
 
   while (num)
   {
@@ -410,20 +423,25 @@ lsf_logger_util_itoa (int num)
 }
 
 gchar *
-lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local_time)
+lsf_logger_get_log_file_output_path (Logger    *logger,
+                                     GDir      *dir,
+                                     GDateTime *local_time)
 {
-  GError *error = NULL;
-  gchar *output_file_identifier;
-  gchar *output_file_name;
-  gchar *output_path;
-  gchar *renamed;
-  gchar *ext_num_str;
-  gchar *first_log_file;
   struct stat file_info;
   const char *dir_file;
-  int i;
-  int max_bytes = atoi (logger->logger_config[LOGGER_MAX_BYTES]);
-  int backup_cnt = atoi (logger->logger_config[LOGGER_BACKUP_COUNT]);
+  GError     *error = NULL;
+  gchar      *output_file_identifier = NULL;
+  gchar      *output_file_name = NULL;
+  gchar      *first_log_file = NULL;
+  gchar      *output_path = NULL;
+  gchar      *ext_num_str = NULL;
+  gchar      *renamed = NULL;
+  int         backup_cnt;
+  int         max_bytes;
+  int         i;
+
+  max_bytes = atoi (logger->logger_config[LOGGER_MAX_BYTES]);
+  backup_cnt = atoi (logger->logger_config[LOGGER_BACKUP_COUNT]);
 
   output_file_identifier = g_date_time_format (local_time, "%F");
   output_file_name = g_strconcat (logger->logger_config[LOGGER_NAME], "-", output_file_identifier, ".", logger->logger_config[LOGGER_FILE_EXTENSION], NULL);

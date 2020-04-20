@@ -11,11 +11,11 @@
 #include <glib/gprintf.h>
 #include <glib/gstdio.h>
 
-#define LOGGER_MAX            10
-#define LOGGER_FMT_STRING_BUF 4096
-#define LOGGER_FMT_WORD_BUF   10
-#define LOGGER_CONFIG         "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
-#define LOGGER_DEFAULT_NAME   "lsf"
+#define LOGGER_MAX              10
+#define LOGGER_FMT_STRING_BUF   4096
+#define LOGGER_FMT_WORD_BUF     10
+#define LSF_LOGGER_CONFIG       "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
+#define LSF_LOGGER_DEFAULT_NAME "lsf"
 
 enum {
   LOGGER_NAME,
