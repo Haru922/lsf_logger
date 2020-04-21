@@ -8,10 +8,9 @@
 #include <sys/types.h>
 
 #include <glib.h>
-#include <glib/gprintf.h>
 #include <glib/gstdio.h>
 
-#include "lsf_confer.h"
+#include "lsf-confer.h"
 
 #define LOGGER_MAX              10
 #define LOGGER_FMT_STRING_BUF   4096
@@ -38,9 +37,10 @@ enum {
 
 enum {
   LOGGER_PRINT_SUCCESS,
+  LOGGER_PRINT_FAILURE_LOGGER_IS_NULL,
   LOGGER_PRINT_FAILURE_CANNOT_OPEN_DIR,
   LOGGER_PRINT_FAILURE_CANNOT_OPEN_FILE,
-  LOGGER_PRINT_FAILURE_RESULT_NUMS
+  LOGGER_PRINT_RESULT_NUMS
 };
 
 typedef struct {
@@ -54,20 +54,22 @@ typedef struct {
 Logger *logger[LOGGER_MAX];
 int     logger_cnt;
 
+#ifndef LOGGER_USE
 #define GLOGC(logger, format, ...) lsf_logger_print(logger, "CRITICAL", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 #define GLOGE(logger, format, ...) lsf_logger_print(logger, "ERROR", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 #define GLOGW(logger, format, ...) lsf_logger_print(logger, "WARNING", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 #define GLOGI(logger, format, ...) lsf_logger_print(logger, "INFO", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
 #define GLOGD(logger, format, ...) lsf_logger_print(logger, "DEBUG", __FILE__, __LINE__, __func__, format, ##__VA_ARGS__)
+#else
+#define GLOGC(logger, format, ...)
+#define GLOGE(logger, format, ...)
+#define GLOGW(logger, format, ...)
+#define GLOGI(logger, format, ...)
+#define GLOGD(logger, format, ...)
+#endif //LOGGER_USE
 
 extern Logger  *lsf_get_logger                      (char *logger_name);
-extern int      lsf_logger_exist                    (char *logger_name);
-extern gboolean lsf_logger_init                     (Logger *logger);
 extern void     lsf_logger_free                     (Logger *logger);
 extern int      lsf_logger_print                    (Logger *logger, char *log_level, const char *file_name, const int line_num, const char *func_name, char *format, ...);
-extern int      lsf_logger_get_log_level_index      (char *log_level);
-extern gchar   *lsf_logger_get_log_format_string    (Logger *logger);
-extern gchar   *lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local_time);
-extern gchar   *lsf_logger_util_itoa                (int num);
 
 #endif
