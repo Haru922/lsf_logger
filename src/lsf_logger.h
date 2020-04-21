@@ -11,10 +11,11 @@
 #include <glib/gprintf.h>
 #include <glib/gstdio.h>
 
+#include "lsf_confer.h"
+
 #define LOGGER_MAX              10
 #define LOGGER_FMT_STRING_BUF   4096
 #define LOGGER_FMT_WORD_BUF     10
-#define LSF_LOGGER_CONFIG       "/home/haru/haru_project/lsf/lsf_logger/conf/log.conf"
 #define LSF_LOGGER_DEFAULT_NAME "lsf"
 
 enum {
@@ -22,8 +23,6 @@ enum {
   LOGGER_PATH,
   LOGGER_FMT,
   LOGGER_LEVEL,
-  LOGGER_MAX_BYTES,
-  LOGGER_BACKUP_COUNT,
   LOGGER_FILE_EXTENSION,
   LOGGER_CONFIG_NUMS
 };
@@ -45,7 +44,11 @@ enum {
 };
 
 typedef struct {
-  gchar *logger_config[LOGGER_CONFIG_NUMS];
+  gchar   *logger_config[LOGGER_CONFIG_NUMS];
+  gint     log_level_index;
+  gint     max_bytes;
+  gint     backup_count;
+  FILE    *output_fp;
 } Logger;
 
 Logger *logger[LOGGER_MAX];
@@ -61,12 +64,9 @@ extern Logger  *lsf_get_logger                      (char *logger_name);
 extern int      lsf_logger_exist                    (char *logger_name);
 extern gboolean lsf_logger_init                     (Logger *logger);
 extern void     lsf_logger_free                     (Logger *logger);
-extern void     lsf_logger_free_all                 (void);
 extern int      lsf_logger_print                    (Logger *logger, char *log_level, const char *file_name, const int line_num, const char *func_name, char *format, ...);
 extern int      lsf_logger_get_log_level_index      (char *log_level);
 extern gchar   *lsf_logger_get_log_format_string    (Logger *logger);
-extern int      lsf_logger_get_log_file_cnt         (Logger *logger, GDir *dir);
-extern gchar   *lsf_logger_get_log_file_first       (Logger *logger, GDir *dir);
 extern gchar   *lsf_logger_get_log_file_output_path (Logger *logger, GDir *dir, GDateTime *local_time);
 extern gchar   *lsf_logger_util_itoa                (int num);
 
