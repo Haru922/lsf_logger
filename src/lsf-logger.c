@@ -373,10 +373,18 @@ lsf_logger_print (Logger     *logger,
   }
 
   local_time = g_date_time_new_now_local ();
-  log_asctime = g_date_time_format (local_time, "%F %H:%M:%S ");
-  log_asctime = g_strconcat (log_asctime, "(", logger_util_itoa (g_date_time_get_microsecond (local_time)), ")", NULL);
+  log_asctime = g_date_time_format (local_time, "%F %H:%M:%S");
+  log_asctime = g_strconcat (log_asctime, ".", logger_util_itoa (g_date_time_get_microsecond (local_time)), NULL);
 
   dir = g_dir_open (logger->logger_config[LOGGER_PATH], 0, &error);
+  if (!dir)
+  {
+    g_error_free (error);
+    error = NULL;
+    g_mkdir (logger->logger_config[LOGGER_PATH], 0755);
+    dir = g_dir_open (logger->logger_config[LOGGER_PATH], 0, &error);
+  }
+
   if (error != NULL)
   {
     g_error_free (error);
